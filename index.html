@@ -1,0 +1,1480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SuchTech — Arduino Game Kit Master</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+<style>
+:root{
+--primary:#00d4ff; --primary-dark:#0099cc; --secondary:#ff6b35;
+--dark:#0a0e17; --darker:#060910; --light:#f0f4f8; --gray:#8892b0;
+--success:#4ade80; --danger:#f87171; --warning:#fbbf24;
+--card-bg:rgba(255,255,255,0.03); --card-border:rgba(0,212,255,0.1);
+--shadow:0 10px 40px rgba(0,0,0,0.3);
+}
+
+*{ margin:0; padding:0; box-sizing:border-box; } body { font-family:'Inter',sans-serif; background:var(--dark); color:var(--light); line-height:1.6; min-height:100vh; overflow-x:hidden; } a { text-decoration:none; color:inherit; }
+.navbar { position:fixed; top:0; width:100%; background:rgba(10,14,23,0.97); backdrop-filter:blur(12px); z-index:1000; border-bottom:1px solid var(--card-border); }
+.nav-container { max-width:1400px; margin:0 auto; padding:0.6rem 1.5rem; display:flex; justify-content:space-between; align-items:center; gap:0.8rem; flex-wrap:wrap; }
+.logo { display:flex; align-items:center; gap:0.7rem; }
+.logo-img { width:45px; height:45px; border-radius:10px; object-fit:contain; border:2px solid var(--primary); box-shadow:0 0 15px rgba(0,212,255,0.3); background:var(--darker); padding:3px; }
+.logo-text { font-family:'Orbitron',sans-serif; font-size:1.3rem; font-weight:700; letter-spacing:2px; }
+.accent { color:var(--primary); }
+.nav-links { display:flex; list-style:none; gap:0.8rem; align-items:center; flex-wrap:wrap; }
+.nav-links a { color:var(--gray); font-size:0.8rem; font-weight:500; transition:color 0.3s; cursor:pointer; white-space:nowrap; padding:0.2rem 0; }
+.nav-links a:hover, .nav-links a.active { color:var(--primary); }
+.nav-links a::after { content:''; display:block; width:0; height:2px; background:var(--primary); transition:width 0.3s; border-radius:2px; }
+.nav-links a:hover::after, .nav-links a.active::after { width:100%; }
+.btn { padding:0.6rem 1.3rem; border-radius:50px; font-size:0.85rem; font-weight:600; transition:all 0.3s; display:inline-flex; align-items:center; gap:0.4rem; border:none; cursor:pointer; white-space:nowrap; }
+.btn-primary { background:linear-gradient(135deg,var(--primary),var(--primary-dark)); color:var(--dark); }
+.btn-primary:hover { transform:translateY(-2px); box-shadow:0 8px 25px rgba(0,212,255,0.3); }
+.btn-secondary { background:transparent; color:var(--light); border:2px solid var(--primary); }
+.btn-secondary:hover { background:var(--primary); color:var(--dark); }
+.btn-success { background:var(--success); color:var(--dark); }
+.btn-sm { padding:0.35rem 0.75rem; font-size:0.75rem; }
+.btn-block { width:100%; justify-content:center; }
+
+.verify-kit-big {
+display:inline-flex; align-items:center; gap:0.8rem;
+padding:1.2rem 3rem; font-size:1.4rem; font-weight:900;
+background:linear-gradient(135deg, #ff6b35, #ff8c42);
+color:white; border-radius:60px; border:none; cursor:pointer;
+box-shadow:0 15px 40px rgba(255,107,53,0.45);
+animation:verifyPulse 2s infinite;
+transition:all 0.3s;
+letter-spacing:1px;
+white-space:nowrap;
+}
+.verify-kit-big:hover {
+transform:scale(1.06);
+box-shadow:0 20px 50px rgba(255,107,53,0.65);
+}
+.verify-kit-big i { font-size:1.8rem; }
+@keyframes verifyPulse {
+0%, 100% { box-shadow:0 15px 40px rgba(255,107,53,0.45); }
+50% { box-shadow:0 15px 60px rgba(255,107,53,0.75); }
+}
+
+.page { display:none; padding-top:70px; min-height:100vh; }
+.page.active { display:block; animation:fadeIn 0.3s ease; }
+@keyframes fadeIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+.container { max-width:1200px; margin:0 auto; padding:1.2rem; }
+
+.hero { min-height:70vh; display:flex; align-items:center; justify-content:center; padding:2.5rem 1.5rem; background:radial-gradient(ellipse at 30% 50%,#1a1f35 0%,var(--dark) 70%); position:relative; overflow:hidden; }
+.hero-content { max-width:700px; z-index:1; text-align:center; }
+.hero-logo { width:100px; height:100px; border-radius:16px; object-fit:contain; margin-bottom:1rem; border:3px solid var(--primary); box-shadow:0 0 30px rgba(0,212,255,0.3); background:var(--darker); padding:6px; }
+.hero-badge { display:inline-block; padding:0.35rem 1rem; background:rgba(0,212,255,0.1); border:1px solid rgba(0,212,255,0.3); border-radius:50px; font-size:0.75rem; color:var(--primary); margin-bottom:1rem; font-weight:600; }
+.hero-title { font-family:'Orbitron',sans-serif; font-size:2rem; line-height:1.2; margin-bottom:0.8rem; }
+.gradient-text { background:linear-gradient(45deg,var(--primary),var(--secondary)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+.hero-subtitle { font-size:0.95rem; color:var(--gray); margin-bottom:1.5rem; line-height:1.6; }
+
+.stats-bar { display:flex; justify-content:space-around; padding:1rem; background:var(--darker); border-radius:12px; margin-bottom:1.2rem; flex-wrap:wrap; gap:0.8rem; }
+.stat-item { text-align:center; min-width:70px; }
+.stat-value { font-size:1.5rem; font-weight:700; color:var(--primary); }
+.stat-label { font-size:0.7rem; color:var(--gray); }
+
+.card { background:var(--card-bg); border:1px solid var(--card-border); border-radius:14px; padding:1.5rem; margin-bottom:1rem; }
+.card-header { display:flex; align-items:center; gap:0.8rem; margin-bottom:0.8rem; }
+.card-icon { font-size:1.4rem; color:var(--primary); }
+.card-title { font-family:'Orbitron',sans-serif; font-size:0.95rem; }
+
+.home-video-wrapper {
+position:relative; width:100%; max-width:500px; margin:0 auto 1.2rem;
+border-radius:12px; overflow:hidden; background:var(--darker);
+border:2px solid var(--primary); box-shadow:0 10px 30px rgba(0,212,255,0.2);
+}
+.home-video-wrapper video { width:100%; max-height:280px; display:block; }
+
+.games-tabs { display:flex; justify-content:center; gap:0.6rem; margin-bottom:1.5rem; flex-wrap:wrap; }
+.tab-btn { padding:0.6rem 1.2rem; background:transparent; border:2px solid var(--gray); color:var(--gray); border-radius:50px; cursor:pointer; font-size:0.85rem; font-weight:600; transition:all 0.3s; }
+.tab-btn.active { border-color:var(--primary); color:var(--primary); background:rgba(0,212,255,0.1); }
+.games-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:1rem; }
+.game-card { background:var(--card-bg); border:1px solid var(--card-border); border-radius:14px; padding:1.3rem; transition:all 0.3s; cursor:pointer; position:relative; }
+.game-card:hover { border-color:var(--primary); transform:translateY(-4px); box-shadow:var(--shadow); }
+.game-card.locked { opacity:0.5; cursor:not-allowed; }
+.game-card.locked:hover { border-color:var(--card-border); transform:none; box-shadow:none; }
+.locked-overlay { position:absolute; inset:0; background:rgba(6,9,16,0.7); display:flex; align-items:center; justify-content:center; border-radius:14px; z-index:2; }
+.locked-overlay span { color:var(--warning); font-size:0.8rem; font-weight:700; text-align:center; }
+.game-icon { font-size:2rem; color:var(--primary); margin-bottom:0.6rem; }
+.game-card h3 { font-size:1rem; margin-bottom:0.3rem; }
+.game-card p { color:var(--gray); font-size:0.78rem; line-height:1.4; }
+.game-card-footer { display:flex; justify-content:space-between; align-items:center; margin-top:0.8rem; }
+.game-tag { padding:0.2rem 0.6rem; background:rgba(0,212,255,0.1); color:var(--primary); border-radius:50px; font-size:0.65rem; font-weight:600; }
+.game-difficulty { font-size:0.65rem; color:var(--gray); }
+
+.collapsible-content { max-height:0; overflow:hidden; transition:max-height 0.4s ease; }
+.collapsible-content.active { max-height:5000px; }
+.collapsible-header { display:flex; justify-content:space-between; align-items:center; cursor:pointer; user-select:none; padding:0.8rem 0; }
+.collapsible-toggle { font-size:1rem; transition:transform 0.3s; color:var(--gray); }
+.collapsible-toggle.active { transform:rotate(180deg); color:var(--primary); }
+.lesson-content { line-height:1.7; color:var(--gray); padding-top:0.8rem; }
+.lesson-content h3 { color:var(--light); margin:1rem 0 0.5rem; }
+.lesson-content h4 { color:var(--primary); margin:0.7rem 0 0.3rem; }
+.lesson-content code { background:var(--darker); padding:0.12rem 0.35rem; border-radius:4px; font-family:'Courier New',monospace; color:var(--primary); font-size:0.78rem; }
+.lesson-content pre { background:#0d1117; padding:0.8rem; border-radius:8px; overflow-x:auto; font-size:0.75rem; margin:0.5rem 0; }
+
+.quiz-question { background:var(--card-bg); border:1px solid var(--card-border); border-radius:10px; padding:1rem; margin-bottom:0.8rem; }
+.quiz-question h4 { color:var(--light); margin-bottom:0.6rem; font-size:0.9rem; }
+.quiz-option { display:block; width:100%; text-align:left; padding:0.6rem 0.8rem; margin-bottom:0.4rem; background:var(--darker); border:1px solid var(--card-border); border-radius:8px; color:var(--light); cursor:pointer; transition:all 0.3s; font-size:0.85rem; }
+.quiz-option:hover { border-color:var(--primary); background:rgba(0,212,255,0.05); }
+.quiz-option.correct { border-color:var(--success); background:rgba(74,222,128,0.1); color:var(--success); }
+.quiz-option.wrong { border-color:var(--danger); background:rgba(248,113,113,0.1); color:var(--danger); }
+.quiz-option.disabled { pointer-events:none; opacity:0.7; }
+
+.form-group { margin-bottom:0.8rem; }
+.form-group label { display:block; margin-bottom:0.35rem; font-size:0.8rem; color:var(--gray); font-weight:500; }
+.form-group input { width:100%; padding:0.65rem 0.8rem; background:var(--darker); border:1px solid var(--card-border); border-radius:10px; color:var(--light); font-size:0.85rem; }
+.form-group input:focus { outline:none; border-color:var(--primary); }
+.form-error { color:var(--danger); font-size:0.75rem; margin-top:0.3rem; }
+
+.video-wrapper { position:relative; width:100%; border-radius:12px; overflow:hidden; margin:0.6rem 0; background:var(--darker); border:1px solid var(--card-border); }
+.video-wrapper video { width:100%; max-height:350px; display:block; }
+
+.modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:2000; overflow-y:auto; padding:1rem; }
+.modal.show { display:block; }
+.modal-container { max-width:700px; margin:1rem auto; background:var(--darker); border:1px solid var(--card-border); border-radius:18px; padding:1.5rem; position:relative; }
+.modal-close { position:absolute; top:0.7rem; right:0.7rem; background:none; border:none; color:var(--gray); font-size:1.5rem; cursor:pointer; }
+.modal-close:hover { color:var(--danger); }
+
+.video-popup-modal .modal-container { max-width:450px; text-align:center; }
+.video-popup-modal video { width:100%; max-height:250px; border-radius:10px; border:2px solid var(--primary); display:block; }
+
+.ide-confirm-modal .modal-container { max-width:420px; text-align:center; }
+.ide-confirm-modal .modal-icon { font-size:3rem; color:var(--warning); margin-bottom:0.8rem; }
+.never-ask-row { display:flex; align-items:center; gap:0.5rem; justify-content:center; margin-top:1rem; font-size:0.8rem; color:var(--gray); cursor:pointer; }
+.never-ask-row input[type="checkbox"] { width:18px; height:18px; accent-color:var(--primary); cursor:pointer; }
+
+.gift-icon { position:fixed; bottom:1.5rem; left:1.5rem; width:55px; height:55px; background:linear-gradient(45deg,var(--secondary),#ff8c42); border-radius:50%; display:none; align-items:center; justify-content:center; cursor:pointer; z-index:1500; box-shadow:0 5px 20px rgba(255,107,53,0.4); animation:giftPulse 1.5s infinite; }
+.gift-icon i { font-size:1.3rem; color:white; }
+.gift-badge { position:absolute; top:-4px; right:-4px; background:var(--danger); color:white; border-radius:50%; width:22px; height:22px; display:flex; align-items:center; justify-content:center; font-size:0.65rem; font-weight:bold; }
+@keyframes giftPulse { 0%,100% { box-shadow:0 5px 20px rgba(255,107,53,0.4); } 50% { box-shadow:0 5px 30px rgba(255,107,53,0.8); } }
+
+.code-block { background:#0d1117; border:1px solid var(--card-border); border-radius:10px; padding:1rem; overflow-x:auto; max-height:350px; overflow-y:auto; margin:0.8rem 0; }
+.code-block pre { font-family:'Courier New',monospace; font-size:0.75rem; color:#e6edf3; line-height:1.5; white-space:pre-wrap; word-wrap:break-word; }
+
+.toast { position:fixed; bottom:1.5rem; right:1.5rem; padding:0.8rem 1.3rem; background:var(--darker); border:1px solid var(--card-border); border-radius:10px; color:var(--light); z-index:3000; transform:translateY(100px); opacity:0; transition:all 0.4s; box-shadow:var(--shadow); font-size:0.85rem; max-width:350px; }
+.toast.show { transform:translateY(0); opacity:1; }
+.toast.success { border-color:var(--success); }
+.toast.error { border-color:var(--danger); }
+
+footer { background:var(--darker); padding:2rem 1.5rem; border-top:1px solid var(--card-border); margin-top:2rem; }
+.footer-content { max-width:1200px; margin:0 auto; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem; }
+.footer-logo { display:flex; align-items:center; gap:0.7rem; }
+.footer-logo img { width:40px; height:40px; border-radius:8px; object-fit:contain; border:2px solid var(--primary); background:var(--dark); padding:3px; }
+
+@media (max-width:768px) {
+.nav-links { gap:0.5rem; }
+.nav-links a { font-size:0.7rem; }
+.btn { padding:0.5rem 1rem; font-size:0.75rem; }
+.hero-title { font-size:1.5rem; }
+.hero-logo { width:80px; height:80px; }
+.container { padding:0.8rem; }
+.games-grid { grid-template-columns:1fr; }
+.footer-content { flex-direction:column; text-align:center; }
+.verify-kit-big { padding:1rem 2rem; font-size:1.1rem; }
+}
+</style>
+</head>
+<body>
+
+<!-- NAVBAR -->
+<nav class="navbar">
+<div class="nav-container">
+<div class="logo">
+<img src="https://i.ibb.co/35JBhrSF/Whats-App-Image-2026-08-16-at-4-37-10-PM.jpg" alt="SuchTech Logo" class="logo-img" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Crect width=%22100%22 height=%22100%22 fill=%22%230a0e17%22/%3E%3Ctext x=%2250%22 y=%2265%22 text-anchor=%22middle%22 fill=%22%2300d4ff%22 font-size=%2250%22 font-weight=%22bold%22%3ES%3C/text%3E%3C/svg%3E'">
+<span class="logo-text">SUCH<span class="accent">TECH</span></span>
+</div>
+<ul class="nav-links" id="navLinks">
+<li><a data-page="home" class="active">Home</a></li>
+<li><a data-page="games">Games</a></li>
+<li><a data-page="learn">Learn</a></li>
+<li><a data-page="setup">Setup</a></li>
+<li><a data-page="verify" id="verifyNavTab">Verify Kit</a></li>
+<li><a data-page="settings" id="settingsNavTab" style="display:none;">My Games</a></li>
+<li><button class="btn btn-primary btn-sm" id="authBtn" onclick="toggleAuth()">Login / Signup</button></li>
+</ul>
+</div>
+</nav>
+
+<!-- GIFT ICON -->
+<div class="gift-icon" id="giftIcon" onclick="openGiftNotification()">
+<i class="fas fa-gift"></i>
+<span class="gift-badge" id="giftBadge">1</span>
+</div>
+
+<!-- HOME PAGE -->
+<div class="page active" id="page-home">
+<header class="hero">
+<div class="hero-content">
+<img src="https://i.ibb.co/35JBhrSF/Whats-App-Image-2026-08-16-at-4-37-10-PM.jpg" alt="SuchTech Logo" class="hero-logo" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Crect width=%22100%22 height=%22100%22 fill=%22%230a0e17%22/%3E%3Ctext x=%2250%22 y=%2265%22 text-anchor=%22middle%22 fill=%22%2300d4ff%22 font-size=%2250%22 font-weight=%22bold%22%3ES%3C/text%3E%3C/svg%3E'">
+<span class="hero-badge">🎮 Arduino Game Kit — TFT Display, 2 Dual-Axis Joysticks &amp; IR Obstacle Sensor</span>
+<h1 class="hero-title">SUCHTECH<br><span class="gradient-text">ARDUINO GAME KIT</span></h1>
+<p class="hero-subtitle">The complete gaming experience. Copy code, upload to your Arduino Uno R3, and play with two dual-axis joysticks and an IR obstacle sensor. Learn electronics with in-depth tutorials covering every component — data cable included!</p>
+
+<button class="verify-kit-big" onclick="showPage('verify')">
+<i class="fas fa-check-circle"></i> VERIFY YOUR KIT
+</button>
+
+<div style="display:flex; gap:0.7rem; justify-content:center; flex-wrap:wrap; margin-top:1.5rem;">
+<button class="btn btn-primary" onclick="showPage('games')"><i class="fas fa-gamepad"></i> Browse Games</button>
+<button class="btn btn-secondary" onclick="showPage('learn')"><i class="fas fa-graduation-cap"></i> Start Learning</button>
+</div>
+</div>
+</header>
+<div class="container">
+<div class="stats-bar">
+<div class="stat-item"><div class="stat-value" id="homeGameCount">0</div><div class="stat-label">Games</div></div>
+<div class="stat-item"><div class="stat-value">5</div><div class="stat-label">Components</div></div>
+<div class="stat-item"><div class="stat-value">100%</div><div class="stat-label">Free Code</div></div>
+<div class="stat-item"><div class="stat-value">24/7</div><div class="stat-label">Support</div></div>
+</div>
+
+<div class="home-video-wrapper">
+<video controls poster="https://i.ibb.co/35JBhrSF/Whats-App-Image-2026-08-16-at-4-37-10-PM.jpg">
+<!-- ╔══════════════════════════════════════════════════════╗
+     ║  >>> PASTE YOUR HOME VIDEO URL ON THIS LINE <<<        ║
+     ║  Replace the src="" value below with your link:        ║
+     ╚══════════════════════════════════════════════════════╝ -->
+<source src="YOUR_DIRECT_VIDEO_URL_HERE" type="video/mp4">
+</video>
+</div>
+
+<div class="home-video-wrapper" style="border-color:var(--secondary); box-shadow:0 10px 30px rgba(255,107,53,0.2);">
+<div style="padding:0.5rem 0.8rem; background:rgba(255,107,53,0.1); color:var(--secondary); font-size:0.75rem; font-weight:600;"><i class="fas fa-code-branch"></i> How to Install All Libraries (IMPORTANT)</div>
+<video controls poster="https://i.ibb.co/35JBhrSF/Whats-App-Image-2026-08-16-at-4-37-10-PM.jpg">
+<!-- ╔══════════════════════════════════════════════════════╗
+     ║  >>> PASTE YOUR LIBRARIES VIDEO URL ON THIS LINE <<<  ║
+     ║  Replace the src="" value below with your link:        ║
+     ╚══════════════════════════════════════════════════════╝ -->
+<source src="https://www.image2url.com/r2/default/videos/1794469516619-f6f7bdcf-962f-4a83-b8e5-43141085a6de.mp4" type="video/mp4">
+</video>
+</div>
+
+<div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:1rem;">
+<div class="card"><div class="card-header"><div class="card-icon"><i class="fas fa-gamepad"></i></div><div class="card-title">Games Collection</div></div><p style="color:var(--gray); font-size:0.85rem;">Browse games for 1 or 2 players, built for the two joysticks. New games added regularly by the owner.</p></div>
+<div class="card"><div class="card-header"><div class="card-icon"><i class="fas fa-graduation-cap"></i></div><div class="card-title">In-Depth Learning</div></div><p style="color:var(--gray); font-size:0.85rem;">Master the Arduino Uno R3, TFT display, both dual-axis joysticks, the IR obstacle sensor, and even the data cable.</p></div>
+<div class="card"><div class="card-header"><div class="card-icon"><i class="fas fa-video"></i></div><div class="card-title">Setup Videos</div></div><p style="color:var(--gray); font-size:0.85rem;">Arduino IDE installation, library setup, and upload walkthroughs.</p></div>
+</div>
+</div>
+</div>
+
+<!-- GAMES PAGE -->
+<div class="page" id="page-games">
+<div style="text-align:center; padding:2.5rem 1rem 0.5rem;">
+<h1 style="font-family:'Orbitron'; font-size:1.8rem;">🎮 GAME <span class="accent">COLLECTION</span></h1>
+<p style="color:var(--gray); font-size:0.85rem;">Copy code → Paste in Arduino IDE → Upload → Play!</p>
+<div id="verifyGateBanner" style="display:none; margin-top:1rem; padding:1rem; background:rgba(255,107,53,0.1); border:1px solid var(--warning); border-radius:10px; max-width:500px; margin-left:auto; margin-right:auto;">
+<p style="color:var(--warning); font-weight:600; font-size:0.9rem;">🔒 VERIFY KIT FIRST to unlock all game codes!</p>
+<button class="btn btn-primary btn-sm" onclick="showPage('verify')" style="margin-top:0.5rem;">Verify Now</button>
+</div>
+</div>
+<div class="container">
+<div class="games-tabs" id="gameTabsContainer">
+<button class="tab-btn active" data-tab="all">🌟 All Games</button>
+<button class="tab-btn" data-tab="1">👤 1 Player</button>
+<button class="tab-btn" data-tab="1-2">👥 1-2 Players</button>
+</div>
+<div class="card" style="border-color:var(--warning); margin-bottom:1rem;">
+<div class="card-header"><div class="card-icon" style="color:var(--warning);"><i class="fas fa-plug"></i></div><div class="card-title">Quick Wiring Reference</div></div>
+<div class="collapsible-header" onclick="toggleGamesPageWiring(this)" style="padding:0;">
+<span style="color:var(--gray); font-size:0.82rem;">Tap to view full wiring for all components</span>
+<span class="collapsible-toggle">&#9660;</span>
+</div>
+<div class="collapsible-content" id="gamesPageWiring">
+<div class="lesson-content" style="font-size:0.8rem; padding-top:0.8rem;" id="gamesPageWiringContent"></div>
+</div>
+</div>
+<div class="games-grid" id="gamesGrid"></div>
+</div>
+</div>
+
+<!-- LEARN PAGE -->
+<div class="page" id="page-learn">
+<div style="text-align:center; padding:2.5rem 1rem 0.5rem;">
+<h1 style="font-family:'Orbitron'; font-size:1.8rem;">📚 LEARNING <span class="accent">MODE</span></h1>
+<p style="color:var(--gray); font-size:0.85rem;">Everything about your kit — explained in depth</p>
+</div>
+<div class="container">
+<div class="card" style="border-color:var(--secondary);">
+<div class="card-header"><div class="card-icon" style="color:var(--secondary);"><i class="fas fa-code-branch"></i></div><div class="card-title">How to Install All Libraries</div></div>
+<div class="video-wrapper">
+<video controls poster="https://i.ibb.co/35JBhrSF/Whats-App-Image-2026-08-16-at-4-37-10-PM.jpg">
+<!-- ╔══════════════════════════════════════════════════════╗
+     ║  >>> PASTE YOUR LIBRARIES VIDEO URL ON THIS LINE <<<  ║
+     ║  Replace the src="" value below with your link:        ║
+     ╚══════════════════════════════════════════════════════╝ -->
+<source src="https://www.image2url.com/r2/default/videos/1794469516619-f6f7bdcf-962f-4a83-b8e5-43141085a6de.mp4" type="video/mp4">
+</video>
+</div>
+<p style="color:var(--gray); font-size:0.8rem;">Watch this first! Install: <strong style="color:var(--light);">Adafruit ST7735</strong> and <strong style="color:var(--light);">Adafruit GFX</strong> via Arduino IDE → Tools → Manage Libraries. The joysticks and IR obstacle sensor need <strong style="color:var(--light);">no library</strong> — they use built-in <code>analogRead()</code> and <code>digitalRead()</code>.</p>
+</div>
+</div>
+<div class="container" id="learnContainer">
+</div>
+</div>
+
+<!-- SETUP PAGE -->
+<div class="page" id="page-setup">
+<div style="text-align:center; padding:2.5rem 1rem 0.5rem;">
+<h1 style="font-family:'Orbitron'; font-size:1.8rem;">🔧 SETUP <span class="accent">GUIDE</span></h1>
+<p style="color:var(--gray); font-size:0.85rem;">Arduino IDE installation, libraries, and upload instructions</p>
+</div>
+<div class="container">
+
+<div class="card" id="ideVideoCard">
+<div class="card-header"><div class="card-icon"><i class="fas fa-video"></i></div><div class="card-title">Arduino IDE Installation Guide</div></div>
+<div class="video-wrapper" id="ideVideoWrapper">
+<video controls poster="https://i.ibb.co/35JBhrSF/Whats-App-Image-2026-08-16-at-4-37-10-PM.jpg">
+<source src="https://www.image2url.com/r2/default/videos/1786967258351-e61caf1f-763f-4711-acc8-0f303eaa676a.mp4" type="video/mp4">
+</video>
+</div>
+<p style="color:var(--gray); font-size:0.8rem;">Step-by-step guide for installing the Arduino IDE on your computer.</p>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     LIBRARIES INSTALLATION VIDEO
+     >>> PASTE YOUR LIBRARIES VIDEO URL ON THE LINE MARKED BELOW <<<
+═════════════════════════════════════════════════════════════ -->
+<div class="card" id="librariesVideoCard">
+<div class="card-header"><div class="card-icon"><i class="fas fa-code-branch"></i></div><div class="card-title">How to Install All Libraries</div></div>
+<div class="video-wrapper">
+<video controls poster="https://i.ibb.co/35JBhrSF/Whats-App-Image-2026-08-16-at-4-37-10-PM.jpg">
+<!-- ╔══════════════════════════════════════════════════════╗
+     ║  >>> PASTE YOUR LIBRARIES VIDEO URL ON THIS LINE <<<   ║
+     ║  Replace the src="" value below with your link:       ║
+     ╚══════════════════════════════════════════════════════╝ -->
+<source src="https://www.image2url.com/r2/default/videos/1794469516619-f6f7bdcf-962f-4a83-b8e5-43141085a6de.mp4" type="video/mp4">
+</video>
+</div>
+<p style="color:var(--gray); font-size:0.8rem;">Install the required libraries via Arduino IDE → Tools → Manage Libraries → search &amp; install each: <strong style="color:var(--light);">Adafruit ST7735</strong> and <strong style="color:var(--light);">Adafruit GFX</strong>. That is all! The joysticks and IR obstacle sensor use only built-in Arduino commands (<code>analogRead()</code> / <code>digitalRead()</code>), so they need no library.</p>
+</div>
+
+<div class="card">
+<div class="card-header"><div class="card-icon"><i class="fas fa-upload"></i></div><div class="card-title">How to Upload Game Code</div></div>
+<ol style="color:var(--gray); line-height:2; padding-left:1.3rem; font-size:0.85rem;">
+<li>Open <strong style="color:var(--light);">Arduino IDE</strong></li>
+<li>Copy the game code from this website</li>
+<li>Paste the code into Arduino IDE (Ctrl+V)</li>
+<li>Select Board: <code>Tools → Board → Arduino Uno</code></li>
+<li>Select Port: <code>Tools → Port → COM port</code></li>
+<li>Click the Upload button (→ arrow)</li>
+<li>Wait for "Done uploading"</li>
+</ol>
+</div>
+<div class="card">
+<div class="card-header"><div class="card-icon"><i class="fas fa-tools"></i></div><div class="card-title">Your Kit Includes</div></div>
+<div id="partsListContainer" style="color:var(--gray); font-size:0.85rem; line-height:1.8;">
+<p>• 1.8 inch TFT Display (128x160, ST7735)</p>
+<p>• Arduino Uno R3</p>
+<p>• Data Cable (USB-A to USB-B)</p>
+<p>• 2x Dual-Axis Joystick Modules (with push button)</p>
+<p>• 1x IR Obstacle Detection Sensor</p>
+</div>
+</div>
+<div class="card">
+<div class="card-header"><div class="card-icon"><i class="fas fa-plug"></i></div><div class="card-title">Wiring Diagram</div></div>
+<div id="wiringContainer" style="color:var(--gray); font-size:0.8rem; line-height:1.6;">
+<h4 style="color:var(--primary); margin:0.6rem 0 0.3rem;">1. ST7735 TFT DISPLAY</h4>
+<pre style="background:#0d1117; padding:0.7rem; border-radius:8px; overflow-x:auto; font-size:0.72rem; margin:0;">TFT VCC      -> Arduino 5V
+TFT GND      -> Arduino GND
+TFT CS       -> Arduino Pin 10
+TFT RST      -> Arduino Pin A1
+TFT A0/DC    -> Arduino Pin A0
+TFT SDA/MOSI -> Arduino Pin 11
+TFT SCK      -> Arduino Pin 13
+TFT LED/BL   -> Arduino 3.3V</pre>
+<h4 style="color:var(--primary); margin:0.9rem 0 0.3rem;">2. JOYSTICK 1 (Player 1)</h4>
+<pre style="background:#0d1117; padding:0.7rem; border-radius:8px; overflow-x:auto; font-size:0.72rem; margin:0;">Joystick 1 VCC -> Arduino 5V
+Joystick 1 GND -> Arduino GND
+Joystick 1 VRx -> Arduino Pin A2
+Joystick 1 VRy -> Arduino Pin A3
+Joystick 1 SW  -> Arduino Pin 2</pre>
+<h4 style="color:var(--primary); margin:0.9rem 0 0.3rem;">3. JOYSTICK 2 (Player 2)</h4>
+<pre style="background:#0d1117; padding:0.7rem; border-radius:8px; overflow-x:auto; font-size:0.72rem; margin:0;">Joystick 2 VCC -> Arduino 5V
+Joystick 2 GND -> Arduino GND
+Joystick 2 VRx -> Arduino Pin A4
+Joystick 2 VRy -> Arduino Pin A5
+Joystick 2 SW  -> Arduino Pin 3</pre>
+<h4 style="color:var(--primary); margin:0.9rem 0 0.3rem;">4. IR OBSTACLE SENSOR</h4>
+<pre style="background:#0d1117; padding:0.7rem; border-radius:8px; overflow-x:auto; font-size:0.72rem; margin:0;">IR VCC -> Arduino 5V
+IR GND -> Arduino GND
+IR OUT -> Arduino Pin 4</pre>
+<p style="color:var(--warning); font-size:0.72rem; margin-top:0.8rem;">The Arduino Uno has one 5V pin — share it between the TFT, both joysticks and the IR sensor using a breadboard or joined wires. The TFT backlight uses the 3.3V pin.</p>
+</div>
+</div>
+</div>
+</div>
+
+<!-- VERIFY PAGE -->
+<div class="page" id="page-verify">
+<div style="text-align:center; padding:2.5rem 1rem 0.5rem;">
+<h1 style="font-family:'Orbitron'; font-size:1.8rem;">✅ VERIFY <span class="accent">YOUR KIT</span></h1>
+<p style="color:var(--gray); font-size:0.85rem;">Enter your unique 12-digit code from your Arduino Game Kit box</p>
+</div>
+<div class="container">
+<div class="card" style="max-width:450px; margin:0 auto;">
+<div class="card-header"><div class="card-icon"><i class="fas fa-key"></i></div><div class="card-title">Kit Verification</div></div>
+<div class="form-group">
+<label>12-Digit Verification Code</label>
+<input type="text" id="verifyCodeInput" placeholder="XXXXXXXXXXXX" maxlength="12" style="text-align:center; font-size:1.2rem; letter-spacing:3px; font-family:'Courier New',monospace;">
+</div>
+<div id="verifyError" class="form-error"></div>
+<button class="btn btn-primary btn-block" onclick="verifyKitCode()"><i class="fas fa-check-circle"></i> Verify My Kit</button>
+<div style="text-align:center; margin-top:0.8rem; font-size:0.8rem; color:var(--gray);">
+The code is on a sticker inside your kit box
+</div>
+</div>
+</div>
+</div>
+
+<!-- SETTINGS/MY GAMES PAGE -->
+<div class="page" id="page-settings">
+<div style="text-align:center; padding:2.5rem 1rem 0.5rem;">
+<h1 style="font-family:'Orbitron'; font-size:1.8rem;">🎁 MY <span class="accent">GAMES</span></h1>
+<p style="color:var(--gray); font-size:0.85rem;">Games gifted to you by the owner</p>
+</div>
+<div class="container">
+<div class="card">
+<div class="card-header"><div class="card-icon"><i class="fas fa-gift"></i></div><div class="card-title">Gifted Games</div></div>
+<div id="myGiftedGames" style="color:var(--gray); font-size:0.9rem;">
+<p>No gifted games yet.</p>
+</div>
+</div>
+<div class="card">
+<div class="card-header"><div class="card-icon"><i class="fas fa-check-circle"></i></div><div class="card-title">Verification Status</div></div>
+<div id="verificationStatus" style="color:var(--gray); font-size:0.9rem;">
+<p>Not verified yet.</p>
+</div>
+</div>
+</div>
+</div>
+
+<!-- GAME DETAIL MODAL -->
+<div class="modal" id="gameModal">
+<div class="modal-container">
+<button class="modal-close" onclick="closeGameModal()">×</button>
+<div id="gameModalContent"></div>
+</div>
+</div>
+
+<!-- WIRING CHECK MODAL (shows before opening any game) -->
+<div class="modal" id="wiringCheckModal">
+<div class="modal-container">
+<button class="modal-close" onclick="closeWiringCheck()">×</button>
+<div style="text-align:center; margin-bottom:0.6rem;">
+<div style="font-size:2.8rem; color:var(--warning);"><i class="fas fa-plug"></i></div>
+<h2 style="font-family:'Orbitron'; font-size:1.2rem;">IS EVERYTHING <span class="accent">WIRED?</span></h2>
+<p style="color:var(--gray); font-size:0.82rem;">Below is the <strong style="color:var(--warning);">wiring guide</strong> (how to connect wires). This is NOT code.</p>
+</div>
+<div id="wiringCheckContent" style="color:var(--gray); font-size:0.8rem; line-height:1.5;"></div>
+<div style="display:flex; gap:0.7rem; justify-content:center; flex-wrap:wrap; margin-top:1.2rem;">
+<button class="btn btn-success" onclick="proceedToGame()"><i class="fas fa-check"></i> YES, EVERYTHING IS WIRED</button>
+<button class="btn btn-secondary" onclick="goToSetupFromWiring()"><i class="fas fa-tools"></i> NOT SURE - SHOW ME</button>
+</div>
+</div>
+</div>
+
+<!-- AUTH MODAL -->
+<div class="modal" id="authModal">
+<div class="modal-container" style="max-width:400px;">
+<button class="modal-close" onclick="closeAuthModal()">×</button>
+<div id="loginFormContent">
+<h2 style="font-family:'Orbitron'; text-align:center; margin-bottom:1rem; font-size:1.2rem;">SUCH<span class="accent">TECH</span> LOGIN</h2>
+<div class="form-group"><label>Email</label><input type="email" id="loginEmail" placeholder="you@example.com"></div>
+<div class="form-group"><label>Password</label><input type="password" id="loginPassword" placeholder="••••••••"></div>
+<div id="loginError" class="form-error"></div>
+<button class="btn btn-primary btn-block" onclick="handleLogin()"><i class="fas fa-sign-in-alt"></i> Login</button>
+<div style="text-align:center; margin-top:0.7rem; font-size:0.8rem; color:var(--gray);">No account? <a style="color:var(--primary); cursor:pointer;" onclick="showSignupForm()">Sign Up</a></div>
+</div>
+<div id="signupFormContent" style="display:none;">
+<h2 style="font-family:'Orbitron'; text-align:center; margin-bottom:1rem; font-size:1.2rem;">CREATE <span class="accent">ACCOUNT</span></h2>
+<div class="form-group"><label>Full Name</label><input type="text" id="signupName" placeholder="John Doe"></div>
+<div class="form-group"><label>Email</label><input type="email" id="signupEmail" placeholder="you@example.com"></div>
+<div class="form-group"><label>Password</label><input type="password" id="signupPassword" placeholder="Min 6 characters"></div>
+<div id="signupError" class="form-error"></div>
+<button class="btn btn-primary btn-block" onclick="handleSignup()"><i class="fas fa-user-plus"></i> Sign Up</button>
+<div style="text-align:center; margin-top:0.7rem; font-size:0.8rem; color:var(--gray);">Already have an account? <a style="color:var(--primary); cursor:pointer;" onclick="showLoginForm()">Login</a></div>
+</div>
+</div>
+</div>
+
+<!-- GIFT NOTIFICATION MODAL -->
+<div class="modal" id="giftNotificationModal">
+<div class="modal-container" style="max-width:400px; text-align:center;">
+<button class="modal-close" onclick="closeGiftNotification()">×</button>
+<div style="font-size:3.5rem; margin-bottom:0.8rem;">🎁</div>
+<h2 style="font-family:'Orbitron'; font-size:1.3rem; margin-bottom:0.8rem;">THE OWNER HAS GIFTED YOU A GAME!</h2>
+<p style="color:var(--gray); margin-bottom:1rem;">GO CHECK IT IN YOUR GAMES!</p>
+<div id="giftNotificationDetails" style="background:var(--card-bg); border:1px solid var(--card-border); border-radius:10px; padding:1rem; margin-bottom:1rem;"></div>
+<div style="display:flex; gap:0.7rem; justify-content:center; flex-wrap:wrap;">
+<button class="btn btn-primary" onclick="openGiftGame()"><i class="fas fa-box-open"></i> Open My Gift</button>
+<button class="btn btn-secondary" onclick="closeGiftNotification()">Later</button>
+</div>
+</div>
+</div>
+
+<!-- SMALL VIDEO POPUP MODAL -->
+<div class="modal video-popup-modal" id="videoPopupModal">
+<div class="modal-container">
+<button class="modal-close" onclick="closeVideoPopup()">×</button>
+<h3 style="font-family:'Orbitron'; font-size:1rem; margin-bottom:0.8rem; text-align:center;">📺 <span class="accent">VIDEO</span></h3>
+<video controls autoplay id="popupVideo">
+<!-- ╔══════════════════════════════════════════════════════════╗
+     ║  >>> PASTE YOUR POPUP VIDEO URL ON THIS LINE TOO <<<        ║
+     ╚══════════════════════════════════════════════════════════╝ -->
+<source src="YOUR_DIRECT_VIDEO_URL_HERE" type="video/mp4">
+</video>
+<p style="color:var(--gray); font-size:0.75rem; text-align:center; margin-top:0.6rem;">SuchTech Arduino Game Kit</p>
+</div>
+</div>
+
+<!-- ARDUINO IDE CONFIRMATION MODAL -->
+<div class="modal ide-confirm-modal" id="ideConfirmModal">
+<div class="modal-container">
+<button class="modal-close" onclick="closeIdeConfirm()">×</button>
+<div class="modal-icon"><i class="fas fa-laptop-code"></i></div>
+<h2 style="font-family:'Orbitron'; font-size:1.2rem; margin-bottom:0.5rem;">ARDUINO <span class="accent">IDE</span></h2>
+<p style="color:var(--gray); font-size:0.9rem; margin-bottom:0.3rem;">Have you installed <strong style="color:var(--light);">Arduino IDE</strong> on your computer?</p>
+<p style="color:var(--gray); font-size:0.75rem; margin-bottom:1rem;">You need it to upload game code to your Arduino Uno R3</p>
+<div style="display:flex; gap:0.7rem; justify-content:center; flex-wrap:wrap;">
+<button class="btn btn-success" onclick="handleIdeYes()"><i class="fas fa-check"></i> YES, INSTALLED</button>
+<button class="btn btn-secondary" onclick="handleGoInstall()"><i class="fas fa-download"></i> GO INSTALL IT</button>
+</div>
+<label class="never-ask-row" onclick="document.getElementById('neverAskCheckbox').click()">
+<input type="checkbox" id="neverAskCheckbox">
+<span>Never ask again</span>
+</label>
+</div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<footer>
+<div class="footer-content">
+<div class="footer-logo">
+<img src="https://i.ibb.co/35JBhrSF/Whats-App-Image-2026-08-16-at-4-37-10-PM.jpg" alt="SuchTech" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Crect width=%22100%22 height=%22100%22 fill=%22%230a0e17%22/%3E%3Ctext x=%2250%22 y=%2265%22 text-anchor=%22middle%22 fill=%22%2300d4ff%22 font-size=%2250%22 font-weight=%22bold%22%3ES%3C/text%3E%3C/svg%3E'">
+<div>
+<span class="logo-text" style="font-size:1.1rem;">SUCH<span class="accent">TECH</span></span>
+<p style="color:var(--gray); font-size:0.7rem;">© 2026 SuchTech. All rights reserved.</p>
+</div>
+</div>
+</div>
+</footer>
+
+<script>
+// =============================================
+// FIREBASE INITIALIZATION
+// The Firebase config is PUBLIC by design — it identifies the project,
+// it is NOT a secret. Real security comes from Firestore Security Rules.
+// (wrapped in try/catch so the page still renders in offline previews)
+// =============================================
+const firebaseConfig = {
+apiKey: "AIzaSyCihzDvuRXd6Yn9FP58UkEiZladkUYHNUc",
+authDomain: "suchbot-mech.firebaseapp.com",
+projectId: "suchbot-mech",
+storageBucket: "suchbot-mech.firebasestorage.app",
+messagingSenderId: "475328033350",
+appId: "1:475328033350:web:b8147dd423ce2a8a925047"
+};
+let auth = null;
+let db = null;
+let backendReady = false;
+try {
+firebase.initializeApp(firebaseConfig);
+auth = firebase.auth();
+db = firebase.firestore();
+backendReady = true;
+} catch (e) {
+console.warn('Firebase unavailable in this preview — hosting the file online enables login, games, and verification.');
+}
+
+// =============================================
+// GLOBAL STATE
+// =============================================
+let currentUser = null;
+let giftedGames = [];
+let pendingGifts = [];
+let isVerified = false;
+let currentGameTab = 'all';
+let allGamesFromFirestore = [];
+let quizQuestions = [];
+let quizScore = 0;
+let quizAnswered = 0;
+let activeListeningToGifts = false;
+let currentGift = null;
+
+// =============================================
+// IDE CONFIRMATION POPUP
+// =============================================
+function checkIdeConfirmation() {
+const neverAsk = localStorage.getItem('suchtech_never_ask_ide');
+if (!neverAsk) {
+setTimeout(() => {
+document.getElementById('ideConfirmModal').classList.add('show');
+}, 1500);
+}
+}
+
+function closeIdeConfirm() {
+document.getElementById('ideConfirmModal').classList.remove('show');
+}
+
+function handleIdeYes() {
+const neverAsk = document.getElementById('neverAskCheckbox');
+if (neverAsk.checked) {
+localStorage.setItem('suchtech_never_ask_ide', 'true');
+}
+closeIdeConfirm();
+showToast('Great! You are ready to upload games!', 'success');
+}
+
+function handleGoInstall() {
+const neverAsk = document.getElementById('neverAskCheckbox');
+if (neverAsk.checked) {
+localStorage.setItem('suchtech_never_ask_ide', 'true');
+}
+closeIdeConfirm();
+showPage('setup');
+showToast('Watch the Arduino IDE Installation Guide below!', 'success');
+}
+
+// =============================================
+// SMALL VIDEO POPUP
+// =============================================
+function openVideoPopup() {
+document.getElementById('videoPopupModal').classList.add('show');
+}
+
+function closeVideoPopup() {
+document.getElementById('videoPopupModal').classList.remove('show');
+const video = document.getElementById('popupVideo');
+if (video) video.pause();
+}
+
+// =============================================
+// PAGE NAVIGATION
+// =============================================
+function showPage(pageName) {
+document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+document.querySelectorAll('.nav-links a').forEach(a => a.classList.remove('active'));
+const page = document.getElementById('page-' + pageName);
+if (page) page.classList.add('active');
+const navLink = document.querySelector('.nav-links a[data-page="' + pageName + '"]');
+if (navLink) navLink.classList.add('active');
+if (pageName === 'games') {
+renderGames(currentGameTab);
+updateVerifyGateBanner();
+}
+if (pageName === 'learn') renderLessons();
+if (pageName === 'settings' && currentUser) loadMyGames();
+if (pageName === 'verify' && currentUser) loadVerifyStatus();
+if (pageName === 'home') loadHomeStats();
+window.scrollTo(0, 0);
+}
+
+// =============================================
+// VERIFY GATE BANNER
+// =============================================
+function updateVerifyGateBanner() {
+const banner = document.getElementById('verifyGateBanner');
+if (!currentUser || !isVerified) {
+banner.style.display = 'block';
+} else {
+banner.style.display = 'none';
+}
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+document.querySelectorAll('.nav-links a[data-page]').forEach(link => {
+link.addEventListener('click', function() {
+showPage(this.getAttribute('data-page'));
+});
+});
+
+document.querySelectorAll('.tab-btn[data-tab]').forEach(btn => {
+btn.addEventListener('click', function() {
+document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+this.classList.add('active');
+currentGameTab = this.getAttribute('data-tab');
+renderGames(currentGameTab);
+});
+});
+
+renderLessons();
+loadGamesFromFirestore();
+loadHomeStats();
+checkIdeConfirmation();
+});
+
+// =============================================
+// SOUND ENGINE
+// =============================================
+const SoundEngine = {
+ctx: null,
+init() {
+if (!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+},
+playTone(freq, duration, type = 'sine', volume = 0.3) {
+this.init();
+const osc = this.ctx.createOscillator();
+const gain = this.ctx.createGain();
+osc.type = type;
+osc.frequency.value = freq;
+gain.gain.value = volume;
+osc.connect(gain);
+gain.connect(this.ctx.destination);
+osc.start();
+gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + duration);
+osc.stop(this.ctx.currentTime + duration);
+},
+playCorrect() { this.playTone(523, 0.12); setTimeout(() => this.playTone(659, 0.12), 120); setTimeout(() => this.playTone(784, 0.15), 240); },
+playWrong() { this.playTone(300, 0.2, 'sawtooth', 0.25); setTimeout(() => this.playTone(200, 0.3, 'sawtooth', 0.2), 200); },
+playGiftUnbox() {
+this.playTone(523, 0.12); setTimeout(() => this.playTone(659, 0.12), 100);
+setTimeout(() => this.playTone(784, 0.12), 200); setTimeout(() => this.playTone(1047, 0.15), 300);
+setTimeout(() => this.playTone(1300, 0.3), 400); setTimeout(() => this.playTone(1568, 0.4), 500);
+},
+playVerification() { this.playTone(523, 0.15); setTimeout(() => this.playTone(659, 0.15), 150); setTimeout(() => this.playTone(784, 0.15), 300); setTimeout(() => this.playTone(1047, 0.3), 450); },
+playClick() { this.playTone(500, 0.08, 'sine', 0.2); }
+};
+
+// =============================================
+// AUTH SYSTEM
+// =============================================
+function toggleAuth() {
+if (currentUser) {
+handleLogout();
+} else {
+document.getElementById('authModal').classList.add('show');
+showLoginForm();
+}
+}
+
+function closeAuthModal() { document.getElementById('authModal').classList.remove('show'); }
+function showSignupForm() { document.getElementById('loginFormContent').style.display = 'none'; document.getElementById('signupFormContent').style.display = 'block'; }
+function showLoginForm() { document.getElementById('signupFormContent').style.display = 'none'; document.getElementById('loginFormContent').style.display = 'block'; }
+
+async function handleLogin() {
+if (!backendReady) { document.getElementById('loginError').textContent = 'Login works when the site is hosted online.'; return; }
+const email = document.getElementById('loginEmail').value.trim();
+const password = document.getElementById('loginPassword').value;
+const errorEl = document.getElementById('loginError');
+errorEl.textContent = '';
+if (!email || !password) { errorEl.textContent = 'Please fill in all fields'; return; }
+try {
+await auth.signInWithEmailAndPassword(email, password);
+SoundEngine.playClick();
+showToast('Welcome back!', 'success');
+closeAuthModal();
+} catch (error) {
+SoundEngine.playWrong();
+errorEl.textContent = getFriendlyError(error);
+}
+}
+
+async function handleSignup() {
+if (!backendReady) { document.getElementById('signupError').textContent = 'Sign up works when the site is hosted online.'; return; }
+const name = document.getElementById('signupName').value.trim();
+const email = document.getElementById('signupEmail').value.trim();
+const password = document.getElementById('signupPassword').value;
+const errorEl = document.getElementById('signupError');
+errorEl.textContent = '';
+if (!name || !email || !password) { errorEl.textContent = 'Please fill in all fields'; return; }
+if (password.length < 6) { errorEl.textContent = 'Password must be at least 6 characters'; return; }
+if (!email.includes('@')) { errorEl.textContent = 'Please enter a valid email'; return; }
+try {
+const userCred = await auth.createUserWithEmailAndPassword(email, password);
+await db.collection('users').doc(userCred.user.uid).set({
+name: name, email: email, provider: 'email',
+createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+role: 'user', verified: false, verificationCode: null,
+giftedGames: [], pendingGifts: []
+});
+SoundEngine.playVerification();
+showToast('Account created! Welcome to SuchTech!', 'success');
+closeAuthModal();
+} catch (error) {
+SoundEngine.playWrong();
+errorEl.textContent = getFriendlyError(error);
+}
+}
+
+async function handleLogout() {
+if (!backendReady) return;
+try {
+await auth.signOut();
+SoundEngine.playClick();
+showToast('Logged out', 'success');
+} catch (error) {
+showToast(error.message, 'error');
+}
+}
+
+function getFriendlyError(error) {
+const messages = {
+'auth/email-already-in-use': 'This email is already registered.',
+'auth/invalid-email': 'Please enter a valid email address.',
+'auth/weak-password': 'Password is too weak (min 6 characters).',
+'auth/user-not-found': 'No account found. Please sign up first.',
+'auth/wrong-password': 'Incorrect password.',
+'auth/invalid-credential': 'Incorrect email or password.',
+'auth/too-many-requests': 'Too many attempts. Try again later.'
+};
+return messages[error.code] || error.message;
+}
+
+if (backendReady) {
+auth.onAuthStateChanged(async (user) => {
+currentUser = user;
+if (user) {
+document.getElementById('settingsNavTab').style.display = 'block';
+document.getElementById('authBtn').innerHTML = '<i class="fas fa-sign-out-alt"></i> Logout';
+await loadUserData(user.uid);
+} else {
+document.getElementById('settingsNavTab').style.display = 'none';
+document.getElementById('authBtn').innerHTML = 'Login / Signup';
+giftedGames = [];
+pendingGifts = [];
+isVerified = false;
+document.getElementById('giftIcon').style.display = 'none';
+}
+});
+}
+
+// =============================================
+// LOAD USER DATA
+// =============================================
+async function loadUserData(userId) {
+if (!backendReady || !userId) return;
+try {
+const doc = await db.collection('users').doc(userId).get();
+if (doc.exists) {
+const data = doc.data();
+giftedGames = data.giftedGames || [];
+pendingGifts = data.pendingGifts || [];
+isVerified = data.verified || false;
+if (pendingGifts.length > 0) {
+document.getElementById('giftIcon').style.display = 'flex';
+document.getElementById('giftBadge').textContent = pendingGifts.length;
+} else {
+document.getElementById('giftIcon').style.display = 'none';
+}
+}
+listenToGifts(userId);
+} catch (error) {
+console.error('User data load error:', error);
+}
+}
+
+function listenToGifts(userId) {
+if (activeListeningToGifts || !backendReady) return;
+activeListeningToGifts = true;
+db.collection('users').doc(userId).onSnapshot((doc) => {
+if (doc.exists) {
+const data = doc.data();
+giftedGames = data.giftedGames || [];
+pendingGifts = data.pendingGifts || [];
+if (pendingGifts.length > 0) {
+document.getElementById('giftIcon').style.display = 'flex';
+document.getElementById('giftBadge').textContent = pendingGifts.length;
+if (!document.getElementById('giftNotificationModal').classList.contains('show')) {
+openGiftNotification();
+}
+} else {
+document.getElementById('giftIcon').style.display = 'none';
+}
+if (document.getElementById('page-games').classList.contains('active')) {
+renderGames(currentGameTab);
+}
+if (document.getElementById('page-settings').classList.contains('active')) {
+loadMyGames();
+}
+}
+});
+}
+
+// =============================================
+// VERIFICATION SYSTEM (with gate) — SECURE, no Cloud Function
+// Code is stored as the document ID, so users can only read ONE code
+// they actually type. They CANNOT list all codes (rules block that).
+// =============================================
+async function verifyKitCode() {
+if (!currentUser) {
+showToast('Please login first to verify your kit', 'error');
+document.getElementById('authModal').classList.add('show');
+showLoginForm();
+return;
+}
+if (!backendReady) {
+document.getElementById('verifyError').textContent = 'Verification works when the site is hosted online.';
+return;
+}
+const code = document.getElementById('verifyCodeInput').value.trim();
+const errorEl = document.getElementById('verifyError');
+errorEl.textContent = '';
+if (code.length !== 12) {
+errorEl.textContent = 'Please enter all 12 digits';
+return;
+}
+if (!/^\d{12}$/.test(code)) {
+errorEl.textContent = 'Code must be 12 digits only';
+return;
+}
+
+try {
+const codeDoc = await db.collection('verifyCodes').doc(code).get();
+if (!codeDoc.exists) {
+errorEl.textContent = 'Invalid code. Please check and try again.';
+SoundEngine.playWrong();
+return;
+}
+const data = codeDoc.data();
+if (data.used === true || data.used === 'true') {
+errorEl.textContent = 'This code has already been used.';
+SoundEngine.playWrong();
+return;
+}
+
+await db.collection('verifyCodes').doc(code).update({
+used: true,
+usedBy: currentUser.uid,
+usedByName: currentUser.displayName || currentUser.email,
+usedAt: firebase.firestore.FieldValue.serverTimestamp()
+});
+
+await db.collection('users').doc(currentUser.uid).update({
+verified: true,
+verificationCode: code
+});
+
+isVerified = true;
+SoundEngine.playVerification();
+showToast('Kit verified! You now have full access!', 'success');
+document.getElementById('verifyCodeInput').value = '';
+loadVerifyStatus();
+updateVerifyGateBanner();
+} catch (error) {
+errorEl.textContent = 'Error: ' + error.message;
+SoundEngine.playWrong();
+}
+}
+
+function loadVerifyStatus() {
+const statusDiv = document.getElementById('verificationStatus');
+if (!currentUser) {
+statusDiv.innerHTML = '<p>Please login to check your status.</p>';
+return;
+}
+if (isVerified) {
+statusDiv.innerHTML = '<p style="color:var(--success);">Your kit is verified! You have full access.</p>';
+} else {
+statusDiv.innerHTML = '<p style="color:var(--warning);">Not verified yet. <a style="color:var(--primary); cursor:pointer;" onclick="showPage(\'verify\')">Verify your kit</a></p>';
+}
+}
+
+// =============================================
+// GAMES SYSTEM (with verify gate)
+// =============================================
+async function loadGamesFromFirestore() {
+if (!backendReady) {
+document.getElementById('gamesGrid').innerHTML = '<p style="color:var(--gray); text-align:center; grid-column:1/-1;">Games load from the SuchTech server once the site is hosted online.</p>';
+return;
+}
+try {
+const snapshot = await db.collection('games').orderBy('createdAt', 'asc').get();
+allGamesFromFirestore = [];
+snapshot.forEach(doc => {
+allGamesFromFirestore.push({ id: doc.id, ...doc.data() });
+});
+renderGames(currentGameTab);
+} catch (error) {
+console.error('Games load error:', error);
+document.getElementById('gamesGrid').innerHTML = '<p style="color:var(--gray); text-align:center;">No games yet. Check back soon!</p>';
+}
+}
+
+function modeLabel(mode) {
+return mode === '1' ? '1 PLAYER' : (mode + ' PLAYERS');
+}
+
+function toggleGamesPageWiring(header) {
+const content = document.getElementById('gamesPageWiring');
+if (content && !content.dataset.filled) {
+document.getElementById('gamesPageWiringContent').innerHTML = buildWiringBlock();
+content.dataset.filled = 'true';
+}
+const toggle = header.querySelector('.collapsible-toggle');
+if (content) content.classList.toggle('active');
+if (toggle) toggle.classList.toggle('active');
+}
+
+function renderGames(tab) {
+const grid = document.getElementById('gamesGrid');
+const games = tab === 'all'
+  ? allGamesFromFirestore
+  : allGamesFromFirestore.filter(g => g.mode === tab);
+if (games.length === 0) {
+grid.innerHTML = '<p style="color:var(--gray); text-align:center; grid-column:1/-1;">No games in this mode yet.</p>';
+return;
+}
+grid.innerHTML = games.map(game => {
+const isLocked = !isVerified && game.mode !== '1';
+return '<div class="game-card ' + (isLocked ? 'locked' : '') + '" onclick="' + (isLocked ? 'showVerifyFirstMessage()' : "openGameDetail('" + game.id + "')") + '">' +
+(isLocked ? '<div class="locked-overlay"><span>🔒 Verify Kit First</span></div>' : '') +
+'<div class="game-icon"><i class="fas ' + (game.icon || 'fa-gamepad') + '"></i></div>' +
+'<h3>' + escapeHtml(game.name) + '</h3>' +
+'<p>' + escapeHtml(game.desc || 'No description') + '</p>' +
+'<div class="game-card-footer">' +
+'<span class="game-tag">' + modeLabel(game.mode) + '</span>' +
+'<span class="game-difficulty">' + escapeHtml(game.difficulty) + '</span>' +
+'</div></div>';
+}).join('');
+}
+
+function showVerifyFirstMessage() {
+showToast('🔒 Please verify your kit first to access this game!', 'error');
+showPage('verify');
+}
+
+// Shared wiring block — used in the wiring check modal and on the games page.
+// It is deliberately NOT shown inside the game code modal anymore, so users
+// never confuse the wiring guide with the Arduino code they need to copy.
+function buildWiringBlock() {
+return '<h4 style="color:var(--warning); margin:0.6rem 0 0.3rem; font-size:0.85rem;">1. ST7735 TFT DISPLAY</h4>' +
+'<div style="background:rgba(251,191,36,0.06); border-left:3px solid var(--warning); padding:0.5rem 0.7rem; border-radius:4px; font-size:0.72rem; color:var(--light); line-height:1.7; white-space:pre;">TFT VCC      -&gt; Arduino 5V\nTFT GND      -&gt; Arduino GND\nTFT CS       -&gt; Arduino Pin 10\nTFT RST      -&gt; Arduino Pin A1\nTFT A0/DC    -&gt; Arduino Pin A0\nTFT SDA/MOSI -&gt; Arduino Pin 11\nTFT SCK      -&gt; Arduino Pin 13\nTFT LED/BL   -&gt; Arduino 3.3V</div>' +
+'<h4 style="color:var(--warning); margin:0.9rem 0 0.3rem; font-size:0.85rem;">2. JOYSTICK 1 (Player 1)</h4>' +
+'<div style="background:rgba(251,191,36,0.06); border-left:3px solid var(--warning); padding:0.5rem 0.7rem; border-radius:4px; font-size:0.72rem; color:var(--light); line-height:1.7; white-space:pre;">Joystick 1 VCC -&gt; Arduino 5V\nJoystick 1 GND -&gt; Arduino GND\nJoystick 1 VRx -&gt; Arduino Pin A2\nJoystick 1 VRy -&gt; Arduino Pin A3\nJoystick 1 SW  -&gt; Arduino Pin 2</div>' +
+'<h4 style="color:var(--warning); margin:0.9rem 0 0.3rem; font-size:0.85rem;">3. JOYSTICK 2 (Player 2)</h4>' +
+'<div style="background:rgba(251,191,36,0.06); border-left:3px solid var(--warning); padding:0.5rem 0.7rem; border-radius:4px; font-size:0.72rem; color:var(--light); line-height:1.7; white-space:pre;">Joystick 2 VCC -&gt; Arduino 5V\nJoystick 2 GND -&gt; Arduino GND\nJoystick 2 VRx -&gt; Arduino Pin A4\nJoystick 2 VRy -&gt; Arduino Pin A5\nJoystick 2 SW  -&gt; Arduino Pin 3</div>' +
+'<h4 style="color:var(--warning); margin:0.9rem 0 0.3rem; font-size:0.85rem;">4. IR OBSTACLE SENSOR</h4>' +
+'<div style="background:rgba(251,191,36,0.06); border-left:3px solid var(--warning); padding:0.5rem 0.7rem; border-radius:4px; font-size:0.72rem; color:var(--light); line-height:1.7; white-space:pre;">IR VCC -&gt; Arduino 5V\nIR GND -&gt; Arduino GND\nIR OUT -&gt; Arduino Pin 4</div>' +
+'<p style="color:var(--warning); font-size:0.72rem; margin-top:0.8rem;"><i class="fas fa-info-circle"></i> The Arduino Uno has one 5V pin — share it between all modules with a breadboard or joined wires.</p>';
+}
+
+// Wiring check flow — shows "Is everything wired?" before any game opens.
+// The wiring guide lives ONLY here (and on the games/setup pages), never
+// inside the game code modal, so it can't be confused with the code.
+let pendingGameId = null;
+function openGameDetail(gameId) {
+if (!currentUser) {
+showToast('Please login first to view game code', 'error');
+document.getElementById('authModal').classList.add('show');
+showLoginForm();
+return;
+}
+if (!isVerified) {
+showToast('🔒 VERIFY KIT FIRST to unlock game codes!', 'error');
+showPage('verify');
+return;
+}
+const game = allGamesFromFirestore.find(g => g.id === gameId);
+if (!game) return;
+pendingGameId = gameId;
+document.getElementById('wiringCheckContent').innerHTML = buildWiringBlock();
+document.getElementById('wiringCheckModal').classList.add('show');
+}
+
+function closeWiringCheck() {
+document.getElementById('wiringCheckModal').classList.remove('show');
+pendingGameId = null;
+}
+
+function goToSetupFromWiring() {
+closeWiringCheck();
+showPage('setup');
+}
+
+function proceedToGame() {
+document.getElementById('wiringCheckModal').classList.remove('show');
+if (!pendingGameId) return;
+const game = allGamesFromFirestore.find(g => g.id === pendingGameId);
+if (!game) { pendingGameId = null; return; }
+const modalContent = document.getElementById('gameModalContent');
+modalContent.innerHTML =
+'<h2 style="font-family:Orbitron,sans-serif; margin-bottom:0.7rem; font-size:1.3rem;"><i class="fas ' + (game.icon || 'fa-gamepad') + '"></i> ' + escapeHtml(game.name) + '</h2>' +
+'<p style="color:var(--gray); margin-bottom:0.8rem; font-size:0.85rem;">' + escapeHtml(game.desc || 'No description') + ' | ' + modeLabel(game.mode) + ' | ' + escapeHtml(game.difficulty) + '</p>' +
+'<div style="display:flex; gap:0.5rem; margin-bottom:0.8rem; flex-wrap:wrap;">' +
+'<button class="btn btn-primary btn-sm" onclick="copyCode(\'' + game.id + '\')"><i class="fas fa-copy"></i> Copy Code</button>' +
+'<button class="btn btn-secondary btn-sm" onclick="downloadCode(\'' + game.id + '\')"><i class="fas fa-download"></i> Download .ino</button>' +
+'</div>' +
+'<div style="background:var(--card-bg); border:1px solid var(--card-border); border-radius:8px; padding:0.7rem; margin-bottom:1rem; font-size:0.8rem; color:var(--gray);">' +
+'<i class="fas fa-info-circle" style="color:var(--primary);"></i> <strong>Upload:</strong> Copy code &rarr; paste in Arduino IDE &rarr; select Board &rarr; click Upload. See <a style="color:var(--primary); cursor:pointer;" onclick="showPage(\'setup\'); closeGameModal();">Setup Guide</a>.' +
+'</div>' +
+'<div style="background:rgba(0,212,255,0.1); border:1px solid var(--primary); border-radius:8px; padding:0.5rem 0.8rem; margin-bottom:0.8rem; text-align:center;">' +
+'<span style="color:var(--primary); font-weight:700; font-size:0.85rem;"><i class="fas fa-arrow-down"></i> COPY THE CODE BELOW <i class="fas fa-arrow-down"></i></span>' +
+'</div>' +
+'<div class="code-block"><pre id="codeDisplay">' + escapeHtml(game.code) + '</pre></div>';
+document.getElementById('gameModal').classList.add('show');
+pendingGameId = null;
+}
+
+function closeGameModal() { document.getElementById('gameModal').classList.remove('show'); }
+
+function copyCode(gameId) {
+const game = allGamesFromFirestore.find(g => g.id === gameId);
+if (!game) return;
+navigator.clipboard.writeText(game.code).then(() => {
+SoundEngine.playCorrect();
+showToast('Code copied! Paste in Arduino IDE.', 'success');
+}).catch(() => showToast('Copy failed', 'error'));
+}
+
+function downloadCode(gameId) {
+const game = allGamesFromFirestore.find(g => g.id === gameId);
+if (!game) return;
+const blob = new Blob([game.code], { type: 'text/plain' });
+const url = URL.createObjectURL(blob);
+const a = document.createElement('a');
+a.href = url;
+a.download = game.name.replace(/\s+/g, '_') + '.ino';
+a.click();
+URL.revokeObjectURL(url);
+SoundEngine.playCorrect();
+showToast('Code downloaded!', 'success');
+}
+
+// =============================================
+// LEARNING SYSTEM
+// =============================================
+const lessonsData = [
+{
+id: 'arduino',
+icon: 'fa-microchip',
+title: 'Arduino Uno R3 - Complete Guide',
+description: 'Everything about the Arduino Uno R3 board',
+content: '<h3>The Arduino Uno R3 - the Brain of Your Kit</h3><p>The Arduino Uno R3 is the latest revision of the classic Arduino Uno. It is the brain of your game kit - it runs your code, reads the joysticks and IR sensor, and controls the TFT display.</p><h4>Key Specifications:</h4><p>- Microcontroller: ATmega328P (8-bit AVR)<br>- Clock Speed: 16 MHz<br>- Digital I/O Pins: 14 (6 provide PWM output)<br>- Analog Input Pins: 6 (A0-A5)<br>- Flash Memory: 32 KB<br>- SRAM: 2 KB<br>- EEPROM: 1 KB<br>- Operating Voltage: 5V</p><h4>Digital Pins (0-13):</h4><p>Each pin can be INPUT or OUTPUT. When HIGH, it outputs 5V. When LOW, it is 0V. Pins 3, 5, 6, 9, 10, 11 support PWM. In this kit: Pin 10 drives TFT CS, Pin 11 is TFT MOSI, Pin 13 is TFT SCK, Pins 2 and 3 read the joystick buttons, and Pin 4 reads the IR sensor.</p><h4>Analog Pins (A0-A5):</h4><p>These read continuous voltage values (0-5V) and convert them to numbers (0-1023). In this kit: A0 and A1 are used as TFT control lines (DC and RST), and A2, A3, A4, A5 read the two joysticks (the VRx and VRy pins of each).</p><h4>Power Pins:</h4><p>5V - 5 volts output (for TFT, joysticks and IR sensor)<br>3.3V - 3.3 volts output (for the TFT backlight)<br>GND - Ground (0V reference)<br>Vin - Input voltage from power supply</p><h4>Built-in LED (Pin 13):</h4><pre>void setup() {\n  pinMode(13, OUTPUT);\n}\nvoid loop() {\n  digitalWrite(13, HIGH);\n  delay(1000);\n  digitalWrite(13, LOW);\n  delay(1000);\n}</pre>'
+},
+{
+id: 'tft',
+icon: 'fa-tv',
+title: '1.8 inch TFT Display - Complete Guide',
+description: 'The color display for your games',
+content: '<h3>What is a 1.8 inch TFT Display?</h3><p>A TFT (Thin-Film Transistor) display is a color LCD screen. Unlike the old character LCDs (16x2), the 1.8 inch TFT can display full color graphics - perfect for your games.</p><h4>Display Specs:</h4><p>- Size: 1.8 inches diagonal<br>- Resolution: 128x160 pixels<br>- Colors: 262,000 (18-bit)<br>- Driver: ST7735<br>- Interface: SPI</p><h4>Wiring:</h4><p>TFT VCC -&gt; Arduino 5V<br>TFT GND -&gt; Arduino GND<br>TFT CS -&gt; Pin 10<br>TFT RST -&gt; Pin A1<br>TFT A0/DC -&gt; Pin A0<br>TFT SDA/MOSI -&gt; Pin 11<br>TFT SCK -&gt; Pin 13<br>TFT LED/BL -&gt; 3.3V</p><h4>Libraries You Need:</h4><p>- Adafruit ST7735 (display driver)<br>- Adafruit GFX (graphics functions)</p>'
+},
+{
+id: 'cable',
+icon: 'fa-plug',
+title: 'Data Cable - Complete Guide',
+description: 'The connection between Arduino and computer',
+content: '<h3>What is the Data Cable?</h3><p>The data cable connects your Arduino Uno R3 to your computer. It is not just for power - it is how code gets uploaded from the Arduino IDE to the board.</p><h4>Cable Specs:</h4><p>- Type: USB-A to USB-B<br>- USB-A: Connects to computer<br>- USB-B: Connects to Arduino Uno R3</p><h4>What it Does:</h4><p>1. Power Supply: Provides 5V power<br>2. Code Upload: Transfers code to board<br>3. Serial Communication: Two-way data transfer</p><h4>Common Issues:</h4><p>- "Port not found" - Driver not installed<br>- "Board not detected" - Cable may be power-only<br>- Upload fails - Wrong board/port selected</p>'
+},
+{
+id: 'joystick',
+icon: 'fa-joystick',
+title: 'Dual-Axis Joysticks - Complete Guide',
+description: 'Two joysticks - the controllers for your games',
+content: '<h3>What is a Dual-Axis Joystick?</h3><p>Each joystick module combines two 10k Ohm potentiometers (one for the X axis, one for the Y axis) and a push button (SW) under the stick. Moving the stick changes the resistance, and the Arduino reads it as a number. Your kit has TWO joysticks - one for each player.</p><h4>Key Specs (each module):</h4><p>- Axes: 2 (VRx + VRy), each a 10k Ohm potentiometer<br>- Button: 1 (SW - push the stick down to click)<br>- Voltage: 5V (works from 3.3V to 5V)<br>- Output: analog 0-5V on each axis<br>- Pins: VCC, GND, VRx, VRy, SW</p><h4>How it Works:</h4><p>1. Moving the stick turns both potentiometers.<br>2. The Arduino reads each axis with <code>analogRead()</code> and gets a value from 0 to 1023. Center is about 512.<br>3. Pushing the stick down closes the SW button to GND. Use <code>INPUT_PULLUP</code> so a press reads LOW.</p><h4>Wiring (2 joysticks):</h4><p>Joystick 1: VCC -&gt; 5V, GND -&gt; GND, VRx -&gt; A2, VRy -&gt; A3, SW -&gt; Pin 2<br>Joystick 2: VCC -&gt; 5V, GND -&gt; GND, VRx -&gt; A4, VRy -&gt; A5, SW -&gt; Pin 3</p><h4>Library Needed:</h4><p>None! <code>analogRead()</code> and <code>digitalRead()</code> are built into the Arduino language.</p><h4>Example Code:</h4><pre>const int JOY1_X  = A2;\nconst int JOY1_Y  = A3;\nconst int JOY1_SW = 2;\n\nvoid setup() {\n  Serial.begin(9600);\n  pinMode(JOY1_SW, INPUT_PULLUP);\n}\n\nvoid loop() {\n  int x = analogRead(JOY1_X);   // 0-1023, center ~512\n  int y = analogRead(JOY1_Y);\n  bool pressed = (digitalRead(JOY1_SW) == LOW);\n\n  // Map an axis to TFT screen width (0-127)\n  int screenX = map(x, 0, 1023, 0, 127);\n\n  Serial.print("X: "); Serial.print(x);\n  Serial.print("  Y: "); Serial.print(y);\n  Serial.print("  Button: ");\n  Serial.println(pressed ? "PRESSED" : "-");\n  delay(100);\n}</pre>'
+},
+{
+id: 'irsensor',
+icon: 'fa-satellite-dish',
+title: 'IR Obstacle Sensor - Complete Guide',
+description: 'Detect walls, hands and objects with infrared',
+content: '<h3>What is the IR Obstacle Sensor?</h3><p>The IR (infrared) obstacle detection module has an IR LED that shines invisible infrared light and an IR receiver that looks for the reflection. When an object comes close, the light bounces back and the module tells the Arduino - perfect for detecting walls, hands, or game objects.</p><h4>Key Specs:</h4><p>- Voltage: 5V (works from 3.3V to 5V)<br>- Output: digital (HIGH/LOW)<br>- Detection range: about 2-30 cm, adjustable<br>- Pins: VCC, GND, OUT<br>- Adjustment: a small potentiometer on the board sets the range</p><h4>How it Works:</h4><p>1. The IR LED emits infrared light.<br>2. If an object is in range, light reflects back to the receiver.<br>3. The onboard comparator triggers and OUT changes state.<br>4. On most modules OUT reads LOW when an obstacle is detected (the onboard LED lights up on detection).</p><h4>Wiring:</h4><p>IR VCC -&gt; Arduino 5V<br>IR GND -&gt; Arduino GND<br>IR OUT -&gt; Arduino Pin 4</p><h4>Library Needed:</h4><p>None! A simple <code>digitalRead()</code> is all it takes.</p><h4>Example Code:</h4><pre>const int IR_PIN = 4;\n\nvoid setup() {\n  Serial.begin(9600);\n  pinMode(IR_PIN, INPUT);\n}\n\nvoid loop() {\n  if (digitalRead(IR_PIN) == LOW) {  // LOW = obstacle on most modules\n    Serial.println("Obstacle detected!");\n  } else {\n    Serial.println("Clear");\n  }\n  delay(100);\n}</pre><h4>Tips:</h4><p>- Direct sunlight can interfere - test indoors first.<br>- Turn the potentiometer to set how far away it detects.<br>- Works most reliably at 2-10 cm for fast games.</p>'
+}
+];
+
+// =============================================
+// QUIZ QUESTION BANK
+// =============================================
+const quizBank = [
+{ question: 'What microcontroller does the Arduino Uno R3 use?', options: ['ATmega328P', 'ESP32', 'Raspberry Pi', 'STM32'], correct: 0, lesson: 'arduino' },
+{ question: 'How many digital I/O pins does the Arduino Uno R3 have?', options: ['8', '10', '14', '20'], correct: 2, lesson: 'arduino' },
+{ question: 'What is the clock speed of the Arduino Uno R3?', options: ['8 MHz', '16 MHz', '32 MHz', '64 MHz'], correct: 1, lesson: 'arduino' },
+{ question: 'What voltage does the Arduino Uno R3 operate at?', options: ['3.3V', '5V', '9V', '12V'], correct: 1, lesson: 'arduino' },
+{ question: 'What is the resolution of the 1.8" TFT display?', options: ['64x128', '128x160', '240x320', '16x2'], correct: 1, lesson: 'tft' },
+{ question: 'Which driver chip does the 1.8" TFT typically use?', options: ['HD44780', 'ST7735', 'MAX7219', 'SSD1306'], correct: 1, lesson: 'tft' },
+{ question: 'What type of cable connects the Arduino Uno R3 to a computer?', options: ['USB-A to USB-B', 'USB-C', 'HDMI', 'Ethernet'], correct: 0, lesson: 'cable' },
+{ question: 'How many dual-axis joysticks are included in your kit?', options: ['1', '2', '3', '4'], correct: 1, lesson: 'joystick' },
+{ question: 'What value does analogRead() return when a joystick axis is centered?', options: ['0', 'About 512', '1023', 'It depends on the button'], correct: 1, lesson: 'joystick' },
+{ question: 'Which function reads a joystick axis on the Arduino?', options: ['digitalRead()', 'analogRead()', 'tone()', 'Serial.read()'], correct: 1, lesson: 'joystick' },
+{ question: 'What happens on the SW pin when you press the joystick down?', options: ['It outputs 5V', 'It connects to GND (reads LOW with INPUT_PULLUP)', 'It outputs 3.3V', 'Nothing'], correct: 1, lesson: 'joystick' },
+{ question: 'Which Arduino pins read the two joysticks in this kit?', options: ['D2 and D3 only', 'A2, A3, A4 and A5', 'D8 to D11', 'A0 and A1'], correct: 1, lesson: 'joystick' },
+{ question: 'What does the IR obstacle sensor detect?', options: ['Light level', 'Nearby objects by reflected infrared light', 'Sound waves', 'Temperature'], correct: 1, lesson: 'irsensor' },
+{ question: 'Which Arduino pin does the IR sensor OUT connect to in this kit?', options: ['Pin 4', 'Pin A0', 'Pin 13', 'Pin 9'], correct: 0, lesson: 'irsensor' },
+{ question: 'How do you change the IR sensor detection range?', options: ['From the Arduino IDE', 'Turn the potentiometer on the module', 'Change the baud rate', 'You cannot change it'], correct: 1, lesson: 'irsensor' },
+{ question: 'Which library do the joysticks and IR sensor need?', options: ['Adafruit GFX', 'Keypad', 'None - analogRead() and digitalRead() are built in', 'Wire'], correct: 2, lesson: 'irsensor' }
+];
+
+// =============================================
+// RENDER LESSONS
+// =============================================
+function renderLessons() {
+const container = document.getElementById('learnContainer');
+container.innerHTML = '';
+lessonsData.forEach(lesson => {
+const card = document.createElement('div');
+card.className = 'card';
+card.innerHTML =
+'<div class="collapsible-header" onclick="toggleLesson(\'' + lesson.id + '-content\', this)">' +
+'<div class="card-header" style="margin:0;"><div class="card-icon"><i class="fas ' + lesson.icon + '"></i></div><div class="card-title">' + lesson.title + '</div></div>' +
+'<span class="collapsible-toggle">▼</span>' +
+'</div>' +
+'<div class="collapsible-content" id="' + lesson.id + '-content">' +
+'<div class="lesson-content">' + lesson.content + '</div>' +
+'</div>';
+container.appendChild(card);
+});
+const quizCard = document.createElement('div');
+quizCard.className = 'card';
+quizCard.innerHTML =
+'<div class="collapsible-header" onclick="toggleLesson(\'quiz-content\', this)">' +
+'<div class="card-header" style="margin:0;"><div class="card-icon"><i class="fas fa-question-circle"></i></div><div class="card-title">Quiz: Test Your Knowledge!</div></div>' +
+'<span class="collapsible-toggle">▼</span>' +
+'</div>' +
+'<div class="collapsible-content" id="quiz-content">' +
+'<div class="lesson-content">' +
+'<p style="color:var(--warning); margin-bottom:0.8rem;">5 random questions selected each time.</p>' +
+'<div id="quizQuestionsContainer"></div>' +
+'<div id="quizResultContainer" style="text-align:center; margin-top:1rem;"></div>' +
+'<button class="btn btn-primary btn-sm" onclick="startRandomQuiz()" style="margin-top:0.8rem;"><i class="fas fa-redo"></i> New Random Quiz</button>' +
+'</div></div>';
+container.appendChild(quizCard);
+}
+
+function toggleLesson(id, header) {
+SoundEngine.playClick();
+const content = document.getElementById(id);
+const toggle = header.querySelector('.collapsible-toggle');
+if (content) content.classList.toggle('active');
+if (toggle) toggle.classList.toggle('active');
+if (id === 'quiz-content' && !content.classList.contains('active')) {
+startRandomQuiz();
+}
+}
+
+// =============================================
+// RANDOMIZED QUIZ
+// =============================================
+function startRandomQuiz() {
+const container = document.getElementById('quizQuestionsContainer');
+quizScore = 0;
+quizAnswered = 0;
+document.getElementById('quizResultContainer').innerHTML = '';
+const shuffled = [...quizBank].sort(() => Math.random() - 0.5);
+quizQuestions = shuffled.slice(0, 5);
+container.innerHTML = '';
+quizQuestions.forEach((q, index) => {
+const qDiv = document.createElement('div');
+qDiv.className = 'quiz-question';
+qDiv.innerHTML =
+'<h4>Question ' + (index + 1) + ': ' + escapeHtml(q.question) + '</h4>' +
+'<div id="quizQ' + index + 'Options"></div>' +
+'<div id="quizQ' + index + 'Result"></div>';
+container.appendChild(qDiv);
+const optionsDiv = document.getElementById('quizQ' + index + 'Options');
+q.options.forEach((opt, optIndex) => {
+const btn = document.createElement('button');
+btn.className = 'quiz-option';
+btn.textContent = opt;
+btn.addEventListener('click', () => checkQuizAnswer(index, optIndex, q.correct));
+optionsDiv.appendChild(btn);
+});
+});
+}
+
+function checkQuizAnswer(qIndex, selected, correct) {
+const optionsDiv = document.getElementById('quizQ' + qIndex + 'Options');
+const resultDiv = document.getElementById('quizQ' + qIndex + 'Result');
+const buttons = optionsDiv.querySelectorAll('.quiz-option');
+buttons.forEach((btn, i) => {
+btn.classList.add('disabled');
+if (i === correct) btn.classList.add('correct');
+if (i === selected && selected !== correct) btn.classList.add('wrong');
+});
+if (selected === correct) {
+quizScore++;
+resultDiv.innerHTML = '<p style="color:var(--success); margin-top:0.4rem;">Correct!</p>';
+SoundEngine.playCorrect();
+} else {
+resultDiv.innerHTML = '<p style="color:var(--danger); margin-top:0.4rem;">Wrong.</p>';
+SoundEngine.playWrong();
+}
+quizAnswered++;
+if (quizAnswered >= 5) {
+setTimeout(() => showQuizResult(), 800);
+}
+}
+
+function showQuizResult() {
+const resultDiv = document.getElementById('quizResultContainer');
+const percentage = Math.round((quizScore / 5) * 100);
+resultDiv.innerHTML =
+'<h3 style="font-family:Orbitron,sans-serif; font-size:1.1rem; color:' + (percentage >= 60 ? 'var(--success)' : 'var(--danger)') + ';">' +
+'Score: ' + quizScore + '/5 (' + percentage + '%)</h3>' +
+(percentage === 100 ? '<p style="color:var(--success);">PERFECT! You are an expert!</p>' :
+percentage >= 80 ? '<p style="color:var(--success);">Excellent!</p>' :
+percentage >= 60 ? '<p style="color:var(--warning);">Good job!</p>' :
+'<p style="color:var(--danger);">Review the lessons and retry!</p>');
+if (percentage >= 60) SoundEngine.playCorrect();
+else SoundEngine.playWrong();
+}
+
+// =============================================
+// GIFT SYSTEM  (exclusive games stored in giftGames collection)
+// =============================================
+async function openGiftNotification() {
+if (!currentUser || pendingGifts.length === 0) return;
+SoundEngine.playGiftUnbox();
+const gift = pendingGifts[0];
+let game = null;
+try {
+const doc = await db.collection('giftGames').doc(gift.giftId).get();
+if (doc.exists) game = doc.data();
+} catch (e) { console.error('Gift load error:', e); }
+currentGift = { giftId: gift.giftId, game: game };
+document.getElementById('giftNotificationDetails').innerHTML =
+'<div style="font-size:2.5rem; margin-bottom:0.5rem;">🎮</div>' +
+'<h3 style="color:var(--primary); margin-bottom:0.4rem;">' + escapeHtml(game ? game.name : 'New Exclusive Game') + '</h3>' +
+'<p style="color:var(--gray);">' + escapeHtml(gift.message || 'Go check it in your games!') + '</p>';
+document.getElementById('giftNotificationModal').classList.add('show');
+}
+
+function buildGiftModal(game) {
+return '<h2 style="font-family:Orbitron,sans-serif; margin-bottom:0.4rem; font-size:1.3rem;"><i class="fas ' + (game.icon || 'fa-gift') + '"></i> ' + escapeHtml(game.name) + ' <span style="font-size:0.65rem; color:var(--secondary); border:1px solid var(--secondary); padding:0.15rem 0.5rem; border-radius:50px; vertical-align:middle;">EXCLUSIVE GIFT</span></h2>' +
+'<p style="color:var(--gray); margin-bottom:0.8rem; font-size:0.85rem;">' + escapeHtml(game.desc || 'No description') + ' | ' + modeLabel(game.mode) + ' | ' + escapeHtml(game.difficulty) + '</p>' +
+'<div style="display:flex; gap:0.5rem; margin-bottom:0.8rem; flex-wrap:wrap;">' +
+'<button class="btn btn-primary btn-sm" onclick="copyGiftCode()"><i class="fas fa-copy"></i> Copy Code</button>' +
+'<button class="btn btn-secondary btn-sm" onclick="downloadGiftCode()"><i class="fas fa-download"></i> Download .ino</button>' +
+'</div>' +
+'<div style="background:var(--card-bg); border:1px solid var(--card-border); border-radius:8px; padding:0.7rem; margin-bottom:1rem; font-size:0.8rem; color:var(--gray);">' +
+'<i class="fas fa-info-circle" style="color:var(--primary);"></i> This game was gifted to you by the owner. Copy code &rarr; paste in Arduino IDE &rarr; Upload.' +
+'</div>' +
+'<div style="background:rgba(0,212,255,0.1); border:1px solid var(--primary); border-radius:8px; padding:0.5rem 0.8rem; margin-bottom:0.8rem; text-align:center;">' +
+'<span style="color:var(--primary); font-weight:700; font-size:0.85rem;"><i class="fas fa-arrow-down"></i> COPY THE CODE BELOW <i class="fas fa-arrow-down"></i></span>' +
+'</div>' +
+'<div class="code-block"><pre id="codeDisplay">' + escapeHtml(game.code) + '</pre></div>';
+}
+
+function openGiftGame() {
+if (!currentGift || !currentGift.game) { showToast('Gift is still loading, try again in a moment', 'error'); return; }
+document.getElementById('giftNotificationModal').classList.remove('show');
+document.getElementById('gameModalContent').innerHTML = buildGiftModal(currentGift.game);
+document.getElementById('gameModal').classList.add('show');
+}
+
+function copyGiftCode() {
+if (!currentGift || !currentGift.game) return;
+navigator.clipboard.writeText(currentGift.game.code).then(() => {
+SoundEngine.playCorrect();
+showToast('Code copied! Paste in Arduino IDE.', 'success');
+}).catch(() => showToast('Copy failed', 'error'));
+}
+
+function downloadGiftCode() {
+if (!currentGift || !currentGift.game) return;
+const blob = new Blob([currentGift.game.code], { type: 'text/plain' });
+const url = URL.createObjectURL(blob);
+const a = document.createElement('a');
+a.href = url;
+a.download = (currentGift.game.name || 'gift').replace(/\s+/g, '_') + '.ino';
+a.click();
+URL.revokeObjectURL(url);
+SoundEngine.playCorrect();
+showToast('Code downloaded!', 'success');
+}
+
+async function closeGiftNotification() {
+document.getElementById('giftNotificationModal').classList.remove('show');
+// Move the gift from pending -> gifted (so it shows in My Games permanently)
+if (currentGift && currentUser && pendingGifts.length > 0 && backendReady) {
+const gift = pendingGifts[0];
+try {
+await db.collection('users').doc(currentUser.uid).update({
+pendingGifts: firebase.firestore.FieldValue.arrayRemove(gift),
+giftedGames: firebase.firestore.FieldValue.arrayUnion(gift.giftId)
+});
+} catch (e) { console.error('Gift move error:', e); }
+}
+document.getElementById('giftIcon').style.display = 'none';
+currentGift = null;
+showPage('settings');
+}
+
+// =============================================
+// MY GAMES PAGE  (exclusive gifts from giftGames collection)
+// =============================================
+async function loadMyGames() {
+if (!currentUser) {
+document.getElementById('myGiftedGames').innerHTML = '<p>Please login to see your games.</p>';
+return;
+}
+const gamesDiv = document.getElementById('myGiftedGames');
+if (giftedGames.length === 0) {
+gamesDiv.innerHTML = '<p>No gifted games yet. The owner may gift you special games!</p>';
+loadVerifyStatus();
+return;
+}
+if (!backendReady) { gamesDiv.innerHTML = '<p>Sign in when the site is hosted online.</p>'; return; }
+gamesDiv.innerHTML = '<p style="color:var(--gray);">Loading your gifts...</p>';
+try {
+const items = await Promise.all(giftedGames.map(async giftId => {
+const doc = await db.collection('giftGames').doc(giftId).get();
+if (!doc.exists) return null;
+return { giftId: giftId, ...doc.data() };
+}));
+const valid = items.filter(x => x);
+if (valid.length === 0) {
+gamesDiv.innerHTML = '<p>No gifted games yet.</p>';
+} else {
+gamesDiv.innerHTML = valid.map(g =>
+'<div class="card" style="margin-bottom:0.6rem; cursor:pointer;" onclick="openGiftedGame(\'' + g.giftId + '\')">' +
+'<div style="display:flex; align-items:center; gap:0.6rem;">' +
+'<i class="fas ' + (g.icon || 'fa-gift') + '" style="color:var(--primary); font-size:1.2rem;"></i>' +
+'<div><strong>' + escapeHtml(g.name) + '</strong><br><span style="color:var(--gray); font-size:0.75rem;">' + modeLabel(g.mode) + ' • ' + escapeHtml(g.difficulty) + '</span></div>' +
+'</div></div>'
+).join('');
+}
+} catch (e) {
+console.error('My games load error:', e);
+gamesDiv.innerHTML = '<p style="color:var(--danger);">Error loading gifts.</p>';
+}
+loadVerifyStatus();
+}
+
+async function openGiftedGame(giftId) {
+if (!backendReady) { showToast('Available when the site is hosted online', 'error'); return; }
+try {
+const doc = await db.collection('giftGames').doc(giftId).get();
+if (!doc.exists) { showToast('Gift not found', 'error'); return; }
+currentGift = { giftId: giftId, game: doc.data() };
+document.getElementById('gameModalContent').innerHTML = buildGiftModal(currentGift.game);
+document.getElementById('gameModal').classList.add('show');
+} catch (e) { showToast('Error: ' + e.message, 'error'); }
+}
+
+async function loadHomeStats() {
+if (!backendReady) return;
+try {
+const snapshot = await db.collection('games').get();
+document.getElementById('homeGameCount').textContent = snapshot.size;
+} catch (error) {
+console.error('Home stats error:', error);
+}
+}
+
+// =============================================
+// UTILITY
+// =============================================
+function showToast(message, type) {
+const toast = document.getElementById('toast');
+toast.textContent = message;
+toast.className = 'toast ' + (type || 'success') + ' show';
+setTimeout(() => toast.classList.remove('show'), 3000);
+}
+
+function escapeHtml(text) {
+if (text === null || text === undefined) return '';
+const div = document.createElement('div');
+div.textContent = String(text);
+return div.innerHTML;
+}
+</script>
+</body>
+</html>
